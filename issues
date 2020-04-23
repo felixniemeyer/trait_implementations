@@ -1,0 +1,15 @@
+validation of friend requests...
+
+Concept of "friendship" = see information the other one does not? 
+=> Hard to realize on Holochain, where everything is transparent?
+
+How about: a continous level for followships
+-> 0 = no followship
+-> towards infinity = i love you so much
+
+-> interesting metric: ratio between both directions of followship between two people
+
+
+
+Linking two agents directly even possible? how to define link type in the zome then? 
+
