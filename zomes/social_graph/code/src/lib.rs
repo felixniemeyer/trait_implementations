@@ -70,18 +70,6 @@ trait SocialGraph {
 }
 */
 
-// see https://developer.holochain.org/api/0.0.47-alpha1/hdk/ for info on using the hdk library
-
-// This is a sample zome that defines an entry type "MyEntry" that can be committed to the
-// agent's chain via the exposed function create_my_entry
-
-/* Thoughts: 
-	- Validation
-		- A friend request acceptance requires an according friend request to be present
-*/
-#[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
-pub struct Followship{
-}
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)] 
 pub struct FriendshipRequest{
@@ -105,9 +93,9 @@ pub fn handle_get_my_followings() -> ZomeApiResult<Vec<HashString>> {
 	Ok(my_followings)
 }
 
-pub fn handle_request_friendship(
+pub fn handle_request_friendship( // maybe "friendship_[formation_]intention" explains it better then "request"
 	receiver_address: HashString,
-) -> ZomeApiResult<u32> {
+) -> ZomeApiResult<()> {
 	let sender_address = hdk::AGENT_ADDRESS.clone().into();
 	let friendship_request = FriendshipRequest {};
 	let entry = Entry::App("friendship_request".into(), friendship_request.into());
@@ -124,19 +112,32 @@ pub fn handle_request_friendship(
 		"friendship_request_receive",
 		"",
 	)?;
-	Ok(4) // TODO '4' ist nonsens.
-}
-
-pub fn handle_accept_friendship_request() {
+	Ok(()) 
 }
 
 pub fn handle_decline_friendship_request() {
 }
 
-pub fn handle_unfollow() {
+pub fn handle_unfollow(target_agent_address: HashString) -> ZomeApiResult<()> {
+	let sender_address = hdk::AGENT_ADDRESS.clone().into();
+	hdk::remove_link(
+		&sender_address,
+		&target_agent_address,
+		"follows",
+		"",
+	)?;
+	Ok(())	
 }
 
-pub fn handle_follow() {
+pub fn handle_follow(target_agent_address: HashString) -> ZomeApiResult<()> {
+	let sender_address = hdk::AGENT_ADDRESS.clone().into();
+	hdk::link_entries(
+		&sender_address,
+		&target_agent_address,
+		"follows",
+		"",
+	)?;
+	Ok(()) 
 }
 
 pub fn handle_get_incoming_friendship_requests() -> ZomeApiResult<Vec<FriendshipRequest>> {
@@ -153,7 +154,7 @@ define_zome! {
     entries: [
 		entry!(
 			name: "friendship_request",
-			description: "an entry linked from an agent entry to this agent's outgoing followships",
+			description: "expresses the willingness of one agent to be in a friendship relation with another one",
 			sharing: Sharing::Public, 
 			validation_package: || {
 				hdk::ValidationPackageDefinition::Entry
@@ -201,10 +202,21 @@ define_zome! {
 		}
         create_friend_request: {
             inputs: |receiver_address: hdk::holochain_persistence_api::hash::HashString|,
-            outputs: |result: ZomeApiResult<u32>|,
+            outputs: |result: ZomeApiResult<()>|,
             handler: handle_request_friendship
         }
+		follow: {
+			inputs: |target_agent_address: HashString|,
+			outputs: |result: ZomeApiResult<()>|,
+			handler: handle_follow
+		}
+		unfollow: {
+			inputs: |target_agent_address: HashString|,
+			outputs: |result: ZomeApiResult<()>|,
+			handler: handle_unfollow
+		}
     ]
+
     traits: {
         hc_public [create_my_entry, get_my_entry]
 		/*SocialGraph [ 
