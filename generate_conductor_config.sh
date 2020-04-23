@@ -9,7 +9,7 @@ instances=""
 interfaces=""
 
 set i=0
-for f in /home/felixpn/.config/holochain/keys/*
+for f in ~/.config/holochain/keys/*
 do
 	i=$((i+1))
 	key=$(basename $f)
@@ -19,7 +19,7 @@ do
 $agents 
 [[agents]]
 id = '$agent_id'
-keystore_file = '/home/felixpn/.config/holochain/keys/$key'
+keystore_file = '~/.config/holochain/keys/$key'
 name = 'testAgent$i'
 public_address = '$key'
 test_agent = true
@@ -53,7 +53,7 @@ done
 
 if [[ $i -lt $AGENT_COUNT ]]
 then 
-	echo "not enough agent key files in /home/felixpn/.config/holochain/keys/" 1>&2
+	echo "not enough agent key files in ~/.config/holochain/keys/" 1>&2
 	echo "generate new keys with 'hc keygen'"
 	exit 1
 fi
