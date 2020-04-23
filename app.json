@@ -1,9 +1,9 @@
 {
-  "name": "Holochain App Name",
-  "description": "A Holochain app",
+  "name": "Holochain Trait Implementations",
+  "description": "Implementations for the social graph, social context and expressions traits",
   "authors": [
     {
-      "identifier": "Author Name <author@name.com>",
+      "identifier": "Felix Paul Niemeyer <niemeyer.felix@gmail.com>",
       "public_key_source": "",
       "signature": ""
     }
