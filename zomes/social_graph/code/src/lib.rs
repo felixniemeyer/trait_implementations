@@ -14,7 +14,7 @@ use hdk::holochain_core_types::{dna::entry_types::Sharing, entry::Entry};
 // use hdk::holochain_persistence_api::cas::content::Address;
 
 use hdk::holochain_json_api::{error::JsonError, json::JsonString};
-
+use hdk::prelude::{LinkMatch};
 use hdk::holochain_persistence_api::hash::HashString;
 
 /* 	trait from here: https://github.com/juntofoundation/Holochain-Trait-Definitions
@@ -71,17 +71,25 @@ pub fn handle_get_my_agent_address() -> ZomeApiResult<HashString> {
 }
 
 pub fn handle_get_my_followers() -> ZomeApiResult<Vec<HashString>> {
-	let my_followers: Vec<HashString> = Vec::new();
+	let my_followers: Vec<HashString> = Vec::new(); // TODO: implement
 	Ok(my_followers)
 }
 
 pub fn handle_get_my_followings() -> ZomeApiResult<Vec<HashString>> {
-	let my_followings: Vec<HashString> = Vec::new();
-	Ok(my_followings)
+	let my_agent_address = hdk::AGENT_ADDRESS.clone().into();
+	match hdk::api::get_links(
+		&my_agent_address, 
+		LinkMatch::Exactly("follows"),
+		LinkMatch::Any
+	) {
+		Ok(result) => Ok(result.addresses()),
+		Err(_e) => {
+			Err(hdk::error::ZomeApiError::ValidationFailed("yes it was here".into()))
+		}
+	}
 }
 
 pub fn handle_request_friendship(
-	// maybe "friendship_[formation_]intention" explains it better then "request"
 	receiver_address: HashString,
 ) -> ZomeApiResult<()> {
 	let sender_address = hdk::AGENT_ADDRESS.clone().into();
@@ -105,10 +113,21 @@ pub fn handle_request_friendship(
 
 pub fn handle_decline_friendship_request() {}
 
-pub fn handle_unfollow(target_agent_address: HashString) -> ZomeApiResult<()> {
-	let sender_address = hdk::AGENT_ADDRESS.clone().into();
-	hdk::remove_link(&sender_address, &target_agent_address, "follows", "")?;
-	Ok(())
+pub fn handle_get_incoming_friendship_requests() -> ZomeApiResult<Vec<FriendshipRequest>> {
+	let incoming_friendship_requests: Vec<FriendshipRequest> = Vec::new();
+	Ok(incoming_friendship_requests)
+}
+
+pub fn handle_get_outgoing_friendship_requests() -> ZomeApiResult<Vec<HashString>> {
+	let my_agent_address = hdk::AGENT_ADDRESS.clone().into(); 
+	match hdk::api::get_links(
+		&my_agent_address, 
+		LinkMatch::Exactly("friendship_request_send"), 
+		LinkMatch::Any
+	) {
+		Ok(result) => Ok(result.addresses()), 
+		Err(e) => Err(e)
+	}
 }
 
 pub fn handle_follow(target_agent_address: HashString) -> ZomeApiResult<()> {
@@ -117,15 +136,12 @@ pub fn handle_follow(target_agent_address: HashString) -> ZomeApiResult<()> {
 	Ok(())
 }
 
-pub fn handle_get_incoming_friendship_requests() -> ZomeApiResult<Vec<FriendshipRequest>> {
-	let incoming_friendship_requests: Vec<FriendshipRequest> = Vec::new();
-	Ok(incoming_friendship_requests)
+pub fn handle_unfollow(target_agent_address: HashString) -> ZomeApiResult<()> {
+	let sender_address = hdk::AGENT_ADDRESS.clone().into();
+	hdk::remove_link(&sender_address, &target_agent_address, "follows", "")?;
+	Ok(())
 }
 
-pub fn handle_get_outgoing_friendship_requests() -> ZomeApiResult<Vec<FriendshipRequest>> {
-	let outgoing_friendship_requests: Vec<FriendshipRequest> = Vec::new();
-	Ok(outgoing_friendship_requests)
-}
 
 define_zome! {
 	entries: [
@@ -138,7 +154,6 @@ define_zome! {
 			},
 			validation: | _validation_data: hdk::EntryValidationData<FriendshipRequest> | {
 				Ok(())
-				// maybe check here, that there is only one list per agent
 			},
 			links: [
 				from!(
@@ -172,15 +187,20 @@ define_zome! {
 	}
 
 	functions: [
-		get_my_entry: {
+		my_agent_address: {
 			inputs: | |,
 			outputs: |result: ZomeApiResult<HashString>|,
 			handler: handle_get_my_agent_address
 		}
-		create_friend_request: {
-			inputs: |receiver_address: hdk::holochain_persistence_api::hash::HashString|,
+		request_friendship: {
+			inputs: |other_agent: hdk::holochain_persistence_api::hash::HashString|,
 			outputs: |result: ZomeApiResult<()>|,
 			handler: handle_request_friendship
+		}
+		outgoing_friendship_requests: {
+			inputs: | |,
+			outputs: | result: ZomeApiResult<Vec<HashString>> |,
+			handler: handle_get_outgoing_friendship_requests
 		}
 		follow: {
 			inputs: |target_agent_address: HashString|,
@@ -192,10 +212,15 @@ define_zome! {
 			outputs: |result: ZomeApiResult<()>|,
 			handler: handle_unfollow
 		}
+		my_followings: {
+			inputs: | |,
+			outputs: |result: ZomeApiResult<Vec<HashString>>|, 
+			handler: handle_get_my_followings
+		}
 	]
 
 	traits: {
-		hc_public [create_my_entry, get_my_entry]
+		hc_public [my_agent_address, request_friendship, outgoing_friendship_requests, follow, my_followings]
 		/*SocialGraph [
 			my_followers,
 			followers,
