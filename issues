@@ -9,6 +9,10 @@ How about: a continous level for followships
 
 -> interesting metric: ratio between both directions of followship between two people
 
+-> or tag links between agents with either 'follow' or 'friend'. 
+	- Challenge: is it possible to create links between agents directly? 
+		- if not, use an anchor
+	
 
 
 Linking two agents directly even possible? how to define link type in the zome then? 
