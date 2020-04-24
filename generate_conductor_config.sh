@@ -85,7 +85,7 @@ port = 8888
 type = 'websocket'
 
 [logger]
-state_dump = true
+state_dump = false
 type = 'debug'
 
 [logger.rules]
