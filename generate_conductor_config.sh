@@ -97,4 +97,9 @@ type = 'cmd'
 [signals]
 consistency = false
 trace = false
+
+[network]
+type = 'sim2h'
+sim2h_url = 'ws://localhost:9000'
+
 " > $OF
