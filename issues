@@ -17,3 +17,12 @@ How about: a continous level for followships
 
 Linking two agents directly even possible? how to define link type in the zome then? 
 
+
+
+
+
+//
+
+- will the holochain traits (e.g. social-graph) reside in their own Cargo package? 
+- functions listed in social-graph and in hc_public trait? 
+- anchors / pagination

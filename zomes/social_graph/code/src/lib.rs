@@ -62,12 +62,63 @@ trait SocialGraph {
 */
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
-pub struct FriendshipRequest {}
+pub struct TestEntry{
+	message: String,
+	author_address: HashString
+}
+
+#[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
+pub struct FriendshipRequest {
+
+}
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct Friendship {}
+
+pub fn handle_make_test_entry(message: String) -> ZomeApiResult<HashString> {
+	let agent_address = hdk::AGENT_ADDRESS.clone().into();
+	let test_entry = TestEntry { 
+		message, 
+		author_address: hdk::AGENT_ADDRESS.clone() 
+	};
+	let entry = Entry::App("test_entry".into(), test_entry.into()); 
+	let entry_address = hdk::commit_entry(&entry)?;
+	hdk::link_entries(
+		&agent_address,
+		&entry_address, 
+		"makes",
+		""
+	)?;
+	Ok(entry_address)
+}
+
+pub fn handle_get_test_entry_addresses() -> ZomeApiResult<Vec<HashString>> {
+	let agent_address = hdk::AGENT_ADDRESS.clone().into(); 
+	match hdk::get_links(
+		&agent_address,
+		LinkMatch::Exactly("makes"), 
+		LinkMatch::Any
+	) {
+		Ok(result) => Ok(result.addresses()), 
+		Err(err) => Err(err) 
+	}
+}
+
+pub fn handle_get_test_entries() -> ZomeApiResult<Vec<TestEntry>> {
+	let agent_address = hdk::AGENT_ADDRESS.clone().into(); 
+	hdk::utils::get_links_and_load_type(
+		&agent_address,
+		LinkMatch::Exactly("makes"), 
+		LinkMatch::Any
+	)
+}
+
+pub fn handle_get_entry(entry_address: HashString) -> ZomeApiResult<TestEntry> {
+	hdk::utils::get_as_type(entry_address)
+}
+
 pub fn handle_get_my_agent_address() -> ZomeApiResult<HashString> {
-	Ok(hdk::AGENT_ADDRESS.clone().into())
+	Ok(hdk::AGENT_ADDRESS.clone())
 }
 
 pub fn handle_get_my_followers() -> ZomeApiResult<Vec<HashString>> {
@@ -113,9 +164,16 @@ pub fn handle_request_friendship(
 
 pub fn handle_decline_friendship_request() {}
 
-pub fn handle_get_incoming_friendship_requests() -> ZomeApiResult<Vec<FriendshipRequest>> {
-	let incoming_friendship_requests: Vec<FriendshipRequest> = Vec::new();
-	Ok(incoming_friendship_requests)
+pub fn handle_get_incoming_friendship_requests() -> ZomeApiResult<Vec<HashString>> {
+	let my_agent_address = hdk::AGENT_ADDRESS.clone().into(); 
+	match hdk::api::get_links(
+		&my_agent_address, 
+		LinkMatch::Exactly("friendship_request_receive"), 
+		LinkMatch::Any
+	) {
+		Ok(result) => Ok(result.addresses().iter().map(|address| address.clone()).collect()), 
+		Err(e) => Err(e)
+	}
 }
 
 pub fn handle_get_outgoing_friendship_requests() -> ZomeApiResult<Vec<HashString>> {
@@ -125,7 +183,7 @@ pub fn handle_get_outgoing_friendship_requests() -> ZomeApiResult<Vec<HashString
 		LinkMatch::Exactly("friendship_request_send"), 
 		LinkMatch::Any
 	) {
-		Ok(result) => Ok(result.addresses()), 
+		Ok(result) => Ok(result.addresses().iter().map(|address| address.clone()).collect()), 
 		Err(e) => Err(e)
 	}
 }
@@ -177,6 +235,29 @@ define_zome! {
 					}
 				)
 			]
+		),
+		entry!(
+			name: "test_entry", 
+			description: "it's just there for experimenting during development, remove for production! :)", 
+			sharing: Sharing::Public, 
+			validation_package: || {
+				hdk::ValidationPackageDefinition::Entry
+			}, 
+			validation: | _validation_data: hdk::EntryValidationData<TestEntry> | {
+				Ok(())
+			}, 
+			links: [
+				from!(
+					"%agent_id", 
+					link_type: "makes", 
+					validation_package: || {
+						hdk::ValidationPackageDefinition::Entry
+					},
+					validation: |_validation_data: hdk::LinkValidationData| {
+						Ok(())
+					}
+				)
+			]
 		)
 	]
 
@@ -187,6 +268,26 @@ define_zome! {
 	}
 
 	functions: [
+		make_test_entry: {		
+			inputs: | message: String |, 
+			outputs: | entry_address: ZomeApiResult<HashString> |, 
+			handler: handle_make_test_entry
+		}
+		get_test_entry_addresses: {
+			inputs: | |, 
+			outputs: | entry_addresses: ZomeApiResult<Vec<HashString>> |, 
+			handler: handle_get_test_entry_addresses
+		}
+		get_test_entries: {
+			inputs: | |, 
+			outputs: | entries: ZomeApiResult<Vec<TestEntry>> |, 
+			handler: handle_get_test_entries
+		}
+		get_test_entry: {
+			inputs: | entry_address: HashString |, 
+			outputs: | entry: ZomeApiResult<TestEntry> |, 
+			handler: handle_get_entry
+		}
 		my_agent_address: {
 			inputs: | |,
 			outputs: |result: ZomeApiResult<HashString>|,
@@ -201,6 +302,11 @@ define_zome! {
 			inputs: | |,
 			outputs: | result: ZomeApiResult<Vec<HashString>> |,
 			handler: handle_get_outgoing_friendship_requests
+		}
+		incoming_friendship_requests: {
+			inputs: | |,
+			outputs: | result: ZomeApiResult<Vec<HashString>> |,
+			handler: handle_get_incoming_friendship_requests
 		}
 		follow: {
 			inputs: |target_agent_address: HashString|,
@@ -220,7 +326,7 @@ define_zome! {
 	]
 
 	traits: {
-		hc_public [my_agent_address, request_friendship, outgoing_friendship_requests, follow, my_followings]
+		hc_public [my_agent_address, request_friendship, outgoing_friendship_requests, incoming_friendship_requests, follow, my_followings, make_test_entry, get_test_entry_addresses, get_test_entries, get_test_entry]	
 		/*SocialGraph [
 			my_followers,
 			followers,
