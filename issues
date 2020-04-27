@@ -12,13 +12,6 @@ How about: a continous level for followships
 -> or tag links between agents with either 'follow' or 'friend'. 
 	- Challenge: is it possible to create links between agents directly? 
 		- if not, use an anchor
-	
-
-
-Linking two agents directly even possible? how to define link type in the zome then? 
-
-
-
 
 
 //
@@ -26,3 +19,8 @@ Linking two agents directly even possible? how to define link type in the zome t
 - will the holochain traits (e.g. social-graph) reside in their own Cargo package? 
 - functions listed in social-graph and in hc_public trait? 
 - anchors / pagination
+
+
+VALIDATION 
+- Get the link issuing agent hash like this:         Create{ validation_data, .. } => if validation_data.package.chain_header.provenances[0] == AGENT_WHO_IS_ALLOWED_TO_WRITE { ... }
+	- source: https://forum.holochain.org/t/writing-a-validation-rule-that-checks-the-entry-author-against-the-data-being-added-the-entry/1545/8
