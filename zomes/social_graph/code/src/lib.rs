@@ -109,15 +109,32 @@ pub fn create_anchors() -> Result<(), String> {
 	Ok(())
 }
 
-pub fn handle_get_my_followers() -> ZomeApiResult<Vec<HashString>> {
-	let my_followers: Vec<HashString> = Vec::new(); // TODO: implement
-	Ok(my_followers)
+pub fn handle_get_followers(agent_addr: HashString) -> ZomeApiResult<Vec<HashString>> {
+	let followers_anchor_addresses = hdk::get_links(
+		&agent_addr, 
+		LinkMatch::Exactly("has_followers_anchor"), 
+		LinkMatch::Any
+	)?.addresses(); 
+	let anchor_addr = followers_anchor_addresses.first().unwrap(); 
+
+	match hdk::get_links(
+		&anchor_addr, 
+		LinkMatch::Exactly("is_followed_by"), 
+		LinkMatch::Any
+	) {
+		Ok(result) => Ok(result.addresses()), 
+		Err(err) => Err(err) 
+	}
 }
 
-pub fn handle_get_my_followings() -> ZomeApiResult<Vec<HashString>> {
+pub fn handle_get_my_followers() -> ZomeApiResult<Vec<HashString>> {
 	let my_agent_address = hdk::AGENT_ADDRESS.clone().into();
+    handle_get_followers(my_agent_address)
+}
+
+pub fn handle_get_followings(agent_addr:HashString) -> ZomeApiResult<Vec<HashString>> {
 	let followings_anchor_addresses = hdk::get_links(
-		&my_agent_address, 
+		&agent_addr, 
 		LinkMatch::Exactly("has_followings_anchor"), 
 		LinkMatch::Any
 	)?.addresses(); 
@@ -132,23 +149,28 @@ pub fn handle_get_my_followings() -> ZomeApiResult<Vec<HashString>> {
 		Err(err) => Err(err) 
 	}
 }
+    
+pub fn handle_get_my_followings() -> ZomeApiResult<Vec<HashString>> {
+	let my_agent_address = hdk::AGENT_ADDRESS.clone().into();
+    handle_get_followings(my_agent_address)
+}
 
 pub fn handle_follow(target_agent_address: HashString) -> ZomeApiResult<()> {
 	let agent_addr = hdk::AGENT_ADDRESS.clone(); 
-	let follower_anchor_addr = hdk::get_links(
+	let followings_anchor_addr = hdk::get_links(
 		&agent_addr, 
 		LinkMatch::Exactly("has_followings_anchor"),
 		LinkMatch::Any
 	)?.addresses();
-	let fad = follower_anchor_addr.first().unwrap();
+	let fad = followings_anchor_addr.first().unwrap();
 	hdk::link_entries(&fad, &target_agent_address, "follows", "")?;
 
-	let followed_anchor_addr = hdk::get_links(
+	let followers_anchor_addr = hdk::get_links(
 		& target_agent_address.clone(), 	
-		LinkMatch::Exactly("has_followings_anchor"),
+		LinkMatch::Exactly("has_followers_anchor"),
 		LinkMatch::Any
 	)?.addresses();
-	let fad2 = followed_anchor_addr.first().unwrap(); 
+	let fad2 = followers_anchor_addr.first().unwrap(); 
 	hdk::link_entries(&fad2, &agent_addr, "is_followed_by", "")?;
 
 	Ok(())
@@ -420,12 +442,16 @@ trait SocialGraph {
 }
 */
 			// following
-		// my_followers {
-		// 	inputs: | |, 
-		// 	out
-		// }
-		// followers {
-		// }
+		my_followers: {
+			inputs: | |, 
+			outputs: |result: ZomeApiResult<Vec<HashString>>|, 
+            handler: handle_get_my_followers
+		}
+		followers: {
+			inputs: | agent_addr:HashString |, 
+			outputs: |result: ZomeApiResult<Vec<HashString>>|, 
+            handler: handle_get_followers
+		}
 		// nth_level_followers {
 		// }
 
@@ -434,9 +460,12 @@ trait SocialGraph {
 			outputs: |result: ZomeApiResult<Vec<HashString>>|, 
 			handler: handle_get_my_followings
 		}
-		// followings: {
-		// }
-		// followings: {
+		followings: {
+            inputs: | agent_addr: HashString |, 
+			outputs: |result: ZomeApiResult<Vec<HashString>>|, 
+			handler: handle_get_followings
+		}
+		// nth_level_followings: {
 		// }
 			
 		follow: {
@@ -486,7 +515,7 @@ trait SocialGraph {
 			incoming_friendship_requests, 
 			follow, 
 			my_followings, 
-			//my_followers,
+			my_followers,
 			make_test_entry
 		]
 		/*SocialGraph [
