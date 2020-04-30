@@ -1,20 +1,36 @@
-validation of friend requests...
+# 2020-04-29
+Brainstorm: next steps: 
+	- automated test
+	- use trait from cargo (evtl. consistency rename followings) 
+	- indroduce profiles to replace current use of agents
+		- discuss with josh
+		- pro
+			- following links etc. directly between profiles
+			- one agent can handle multiple profiles (e.g. for businesses) under the same agent key
+	- validation of entries and links
+		- anchors
+			- provanance_agent == entry.agent_address
+		- followship / friendship 
+			- provenance_agent == entry.agent_address
+		- 
+
+# someday
 
 Concept of "friendship" = see information the other one does not? 
-=> Hard to realize on Holochain, where everything is transparent?
+	=> Hard to realize on Holochain, where everything is transparent?
+		=> solution: spawn private dnas, maybe membranes
 
 How about: a continous level for followships
--> 0 = no followship
--> towards infinity = i love you so much
+	-> 0 = no followship
+	-> towards infinity = i love you so much
+		-> interesting metric: ratio between both directions of followship between two people
 
--> interesting metric: ratio between both directions of followship between two people
-
--> or tag links between agents with either 'follow' or 'friend'. 
+Or tag links between agents with either 'follow' or 'friend'. 
 	- Challenge: is it possible to create links between agents directly? 
 		- if not, use an anchor
 
 
-//
+# 2020-04-24 // call last friday 
 
 - will the holochain traits (e.g. social-graph) reside in their own Cargo package? 
 - functions listed in social-graph and in hc_public trait? 
@@ -24,3 +40,4 @@ How about: a continous level for followships
 VALIDATION 
 - Get the link issuing agent hash like this:         Create{ validation_data, .. } => if validation_data.package.chain_header.provenances[0] == AGENT_WHO_IS_ALLOWED_TO_WRITE { ... }
 	- source: https://forum.holochain.org/t/writing-a-validation-rule-that-checks-the-entry-author-against-the-data-being-added-the-entry/1545/8
+
