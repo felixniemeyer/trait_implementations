@@ -155,23 +155,23 @@ pub fn handle_get_my_followings() -> ZomeApiResult<Vec<HashString>> {
     handle_get_followings(my_agent_address)
 }
 
-pub fn handle_follow(target_agent_address: HashString) -> ZomeApiResult<()> {
-	let agent_addr = hdk::AGENT_ADDRESS.clone(); 
-	let followings_anchor_addr = hdk::get_links(
-		&agent_addr, 
+pub fn handle_follow(agent_b_address: HashString) -> ZomeApiResult<()> {
+	let agent_a_address = hdk::AGENT_ADDRESS.clone(); 
+	let temp_addresses = hdk::get_links(
+		&agent_a_address, 
 		LinkMatch::Exactly("has_followings_anchor"),
 		LinkMatch::Any
 	)?.addresses();
-	let fad = followings_anchor_addr.first().unwrap();
-	hdk::link_entries(&fad, &target_agent_address, "follows", "")?;
+	let followings_anchor = temp_addresses.first().unwrap();
+	hdk::link_entries(&followings_anchor, &agent_b_address, "follows", "")?;
 
-	let followers_anchor_addr = hdk::get_links(
-		& target_agent_address.clone(), 	
+	let temp_addresses2 = hdk::get_links(
+		& agent_b_address.clone(), 	
 		LinkMatch::Exactly("has_followers_anchor"),
 		LinkMatch::Any
 	)?.addresses();
-	let fad2 = followers_anchor_addr.first().unwrap(); 
-	hdk::link_entries(&fad2, &agent_addr, "is_followed_by", "")?;
+	let followers_anchor = temp_addresses2.first().unwrap(); 
+	hdk::link_entries(&followers_anchor, &agent_a_address, "is_followed_by", "")?;
 
 	Ok(())
 }
