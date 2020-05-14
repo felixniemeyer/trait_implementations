@@ -42,10 +42,18 @@ orchestrator.registerScenario("following adds a is_followed_by link to followed 
     B.call("trait_implementations", "social_graph", "my_agent_address", {}),
   ])
 
+  sleep = async function(t) {
+    return new Promise((res, rej) => {
+      setTimeout(res, t)
+    })
+  }
+
   await s.consistency()
+  await sleep(60*1000)
   await A.call("trait_implementations", "social_graph", "follow", {target_agent_address: B_agent_addr.Ok})
 
   await s.consistency()
+  await sleep(60*1000)
   const B_followers = await B.call("trait_implementations", "social_graph", "my_followers", {})
 
   console.log("same?:", B_followers.Ok[0], A_agent_addr.Ok)
